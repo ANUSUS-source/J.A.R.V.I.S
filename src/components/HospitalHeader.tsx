@@ -14,6 +14,7 @@ import {
   Sliders,
   Radio,
   Brain,
+  Camera,
 } from 'lucide-react';
 import { jarvisVoice } from '../utils/speechEngine';
 
@@ -23,6 +24,7 @@ interface HospitalHeaderProps {
   onTriggerSos: () => void;
   activeDispatchesCount: number;
   onOpenVoiceStudio?: () => void;
+  onOpenCameraScanner?: () => void;
 }
 
 export const HospitalHeader: React.FC<HospitalHeaderProps> = ({
@@ -31,6 +33,7 @@ export const HospitalHeader: React.FC<HospitalHeaderProps> = ({
   onTriggerSos,
   activeDispatchesCount,
   onOpenVoiceStudio,
+  onOpenCameraScanner,
 }) => {
   const [currentTime, setCurrentTime] = React.useState(
     new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
@@ -108,6 +111,19 @@ export const HospitalHeader: React.FC<HospitalHeaderProps> = ({
               <span className="w-2 h-2 rounded-full bg-emerald-400" />
               <span>6 DOCTORS ON-CALL</span>
             </div>
+          )}
+
+          {/* AI Camera Injury Scanner Trigger */}
+          {onOpenCameraScanner && (
+            <button
+              onClick={onOpenCameraScanner}
+              title="Open Optical Injury Scanner (Examine red eyes, cuts, burns, rashes & doctor wait times)"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-200 text-xs font-mono font-bold shadow-[0_0_12px_rgba(6,182,212,0.25)] transition-all"
+            >
+              <Camera className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">AI CAMERA SCANNER</span>
+              <span className="sm:hidden">SCAN</span>
+            </button>
           )}
 
           {/* Male Voice Studio Trigger */}

@@ -2,6 +2,8 @@ import React, { useState, useRef, useEffect } from 'react';
 import { HospitalChatMessage, EmergencyTriageAlert } from '../types/hospital';
 import { HospitalWayfinderCard } from './HospitalWayfinderCard';
 import { EmergencyDoctorAlert } from './EmergencyDoctorAlert';
+import { PatientWaitingTimeBox } from './PatientWaitingTimeBox';
+import { ON_CALL_DOCTORS } from '../data/hospitalDirectory';
 import { jarvisVoice } from '../utils/speechEngine';
 import { soundFx } from '../utils/audioEffects';
 import {
@@ -28,6 +30,8 @@ import {
   ShieldAlert,
   Activity,
   Compass,
+  Camera,
+  Pill,
 } from 'lucide-react';
 
 interface HospitalVoiceChatProps {
@@ -40,6 +44,7 @@ interface HospitalVoiceChatProps {
   activeAlert?: EmergencyTriageAlert | null;
   onTriggerSos?: () => void;
   onOpenVoiceStudio?: () => void;
+  onOpenCameraScanner?: () => void;
   dispatchedDoctorsCount?: number;
 }
 
@@ -50,6 +55,31 @@ interface ChipItem {
 }
 
 const UNIFIED_QUICK_CHIPS: ChipItem[] = [
+  {
+    label: '👁️ Red eyes cause, prescription & wait time',
+    query: 'My eyes are very red, burning and irritated. Jarvis, what is the cause, what medicines/prescriptions do you recommend, and what is the eye doctor waiting time?',
+    category: 'emergency',
+  },
+  {
+    label: '👄 Mouth wound & canker sore relief',
+    query: 'I have a painful cut on my lip and a canker sore in my mouth. Jarvis, recommend medicines and doctor waiting time.',
+    category: 'emergency',
+  },
+  {
+    label: '👂 Ear infection & swimmer’s ear',
+    query: 'My ear is swollen, throbbing, and tender to the touch after swimming. What ear drops do you prescribe and how long is the wait?',
+    category: 'emergency',
+  },
+  {
+    label: '🦵 Leg cut & road rash wound',
+    query: 'I have a deep cut on my shin and knee from falling on gravel. What antiseptic and antibiotics do I need and who is the on-call doctor?',
+    category: 'emergency',
+  },
+  {
+    label: '🖐️ Finger cut & throbbing nailbed',
+    query: 'My finger has a cut and the nailbed is infected and throbbing. What medicines should I apply and what is the wait time?',
+    category: 'emergency',
+  },
   {
     label: '🚑 Sudden chest pain & breathlessness',
     query: "I'm having severe acute chest pain and finding it hard to breathe",
@@ -117,6 +147,7 @@ export const HospitalVoiceChat: React.FC<HospitalVoiceChatProps> = ({
   activeAlert,
   onTriggerSos,
   onOpenVoiceStudio,
+  onOpenCameraScanner,
   dispatchedDoctorsCount = 0,
 }) => {
   const [inputText, setInputText] = useState('');
@@ -228,7 +259,7 @@ export const HospitalVoiceChat: React.FC<HospitalVoiceChatProps> = ({
   const voiceName = jarvisVoice.getVoiceName();
 
   return (
-    <div className="w-full bg-slate-900/95 border border-cyan-500/30 rounded-3xl shadow-[0_10px_50px_rgba(6,182,212,0.12)] flex flex-col h-[780px] lg:h-[820px] backdrop-blur-xl overflow-hidden relative transition-all">
+    <div className="w-full bg-slate-950/85 border border-cyan-500/30 rounded-3xl shadow-[0_10px_50px_rgba(6,182,212,0.12)] flex flex-col h-[780px] lg:h-[820px] backdrop-blur-lg overflow-hidden relative transition-all">
       {/* 1. TOP INTEGRATED TRIAGE & AUDIO STATUS HEADER */}
       <div className="px-4 py-3 sm:px-6 sm:py-3.5 border-b border-slate-800 bg-slate-950/90 flex flex-col md:flex-row items-start md:items-center justify-between gap-3 shrink-0">
         {/* Left: Identity and Subsystem Status */}
@@ -303,11 +334,24 @@ export const HospitalVoiceChat: React.FC<HospitalVoiceChatProps> = ({
             </div>
           )}
 
+          {/* AI Camera Injury Scanner Button */}
+          {onOpenCameraScanner && (
+            <button
+              onClick={onOpenCameraScanner}
+              title="Open Optical Injury Scanner (Examine red eyes, cuts, burns & doctor wait times)"
+              className="flex items-center gap-1.5 px-2.5 sm:px-3 py-1 rounded-lg bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-500/50 text-cyan-200 text-xs font-mono font-bold shadow-[0_0_12px_rgba(6,182,212,0.25)] transition-all"
+            >
+              <Camera className="w-3.5 h-3.5 text-cyan-400" />
+              <span className="hidden sm:inline">CAMERA SCANNER</span>
+              <span className="sm:hidden">SCAN</span>
+            </button>
+          )}
+
           {/* Active Voice Pill */}
           <button
             onClick={onOpenVoiceStudio}
             title="Configure Male Voice Synthesizer"
-            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-800 border border-slate-700 text-cyan-300 text-xs font-mono transition-colors"
+            className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-slate-900 hover:bg-slate-850 border border-slate-700 text-cyan-300 text-xs font-mono transition-colors"
           >
             <Radio className="w-3 h-3 text-cyan-400" />
             <span className="truncate max-w-[110px] font-semibold">{voiceName}</span>
@@ -407,6 +451,149 @@ export const HospitalVoiceChat: React.FC<HospitalVoiceChatProps> = ({
                     onViewOnMap={onViewOnMap}
                   />
                 )}
+
+                {/* If there is a Clinical Vision Scan Result, show the Diagnostic Vision Card! */}
+                {msg.clinicalScanResult && (
+                  <div className="p-4 rounded-xl bg-slate-900 border border-cyan-500/40 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-mono text-cyan-400 font-bold uppercase tracking-wider">
+                        [OPTICAL CLINICAL SCAN REPORT]
+                      </span>
+                      <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-cyan-950 text-cyan-300 border border-cyan-500/30 font-bold">
+                        {msg.clinicalScanResult.severity} SEVERITY
+                      </span>
+                    </div>
+
+                    <div className="text-sm font-bold text-white">
+                      {msg.clinicalScanResult.identifiedCondition}
+                    </div>
+
+                    {/* Probable Causes */}
+                    <div className="space-y-1">
+                      <div className="text-[11px] font-mono text-slate-400 font-semibold">Probable Causes:</div>
+                      <ul className="text-xs text-slate-300 space-y-0.5 pl-1">
+                        {msg.clinicalScanResult.probableCauses.map((c, i) => (
+                          <li key={i} className="flex items-start gap-1.5">
+                            <span className="text-cyan-400">•</span>
+                            <span>{c}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+
+                    {/* Recommended Medicines */}
+                    <div className="space-y-1.5 pt-1 border-t border-slate-800">
+                      <div className="text-[11px] font-mono text-emerald-400 font-semibold flex items-center gap-1">
+                        <Pill className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>Recommended Prescriptions & Medicines:</span>
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {msg.clinicalScanResult.recommendedMedicines.map((m, i) => (
+                          <div key={i} className="p-2 rounded-lg bg-slate-950 border border-slate-800 text-xs">
+                            <div className="font-bold text-white flex items-center justify-between">
+                              <span>{m.name}</span>
+                              <span className="text-[9px] font-mono text-cyan-300">{m.type}</span>
+                            </div>
+                            <div className="text-cyan-400 font-mono text-[11px] mt-0.5">▶ {m.dosage}</div>
+                            <div className="text-slate-400 text-[10px] mt-0.5">{m.purpose}</div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Patient Waiting Time Box with Full Details */}
+                    <div className="pt-1">
+                      <PatientWaitingTimeBox
+                        doctorName={msg.clinicalScanResult.recommendedDoctor.name}
+                        specialty={msg.clinicalScanResult.recommendedDoctor.specialty}
+                        department={msg.clinicalScanResult.recommendedDoctor.department}
+                        location={msg.clinicalScanResult.recommendedDoctor.location}
+                        floorId={
+                          msg.clinicalScanResult.recommendedDoctor.location.includes('Level G') ||
+                          msg.clinicalScanResult.recommendedDoctor.location.includes('Ground')
+                            ? 'G'
+                            : msg.clinicalScanResult.recommendedDoctor.location.includes('Level 2')
+                            ? 'L2'
+                            : msg.clinicalScanResult.recommendedDoctor.location.includes('Level 4')
+                            ? 'L4'
+                            : 'L1'
+                        }
+                        currentWaitingTime={msg.clinicalScanResult.recommendedDoctor.currentWaitingTime}
+                        queueLength={msg.clinicalScanResult.recommendedDoctor.queueLength}
+                        priority={msg.clinicalScanResult.severity}
+                        conditionTitle={msg.clinicalScanResult.identifiedCondition}
+                        pager={msg.clinicalScanResult.recommendedDoctor.pager}
+                        prepAdvice={msg.clinicalScanResult.immediateHomeCare}
+                        onViewOnMap={onViewOnMap}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* If Assistant discusses a doctor or waiting time without clinicalScanResult, show the full Patient Waiting Time Box */}
+                {!isUser && !msg.clinicalScanResult && (() => {
+                  const txt = msg.content.toLowerCase();
+                  if (
+                    txt.includes('waiting time') ||
+                    txt.includes('wait time') ||
+                    txt.includes('queue') ||
+                    txt.includes('evelyn vance') ||
+                    txt.includes('marcus vance') ||
+                    txt.includes('samantha reed') ||
+                    txt.includes('michael ross') ||
+                    txt.includes('david miller') ||
+                    txt.includes('red eye') ||
+                    txt.includes('conjunctiv') ||
+                    txt.includes('wound')
+                  ) {
+                    // Match the most relevant doctor
+                    let matchedDoc = ON_CALL_DOCTORS[0];
+                    if (txt.includes('eye') || txt.includes('evelyn') || txt.includes('cornea') || txt.includes('vision')) {
+                      matchedDoc = ON_CALL_DOCTORS.find((d) => d.id === 'doc-evelyn') || ON_CALL_DOCTORS[0];
+                    } else if (txt.includes('mouth') || txt.includes('canker') || txt.includes('reed') || txt.includes('oral') || txt.includes('lip')) {
+                      matchedDoc = ON_CALL_DOCTORS.find((d) => d.id === 'doc-reed') || ON_CALL_DOCTORS[0];
+                    } else if (txt.includes('finger') || txt.includes('miller') || txt.includes('ortho') || txt.includes('nail')) {
+                      matchedDoc = ON_CALL_DOCTORS.find((d) => d.id === 'doc-miller') || ON_CALL_DOCTORS[0];
+                    } else if (txt.includes('hand') || txt.includes('burn') || txt.includes('ross')) {
+                      matchedDoc = ON_CALL_DOCTORS.find((d) => d.id === 'doc-ross') || ON_CALL_DOCTORS[0];
+                    } else if (txt.includes('cardio') || txt.includes('chest') || txt.includes('heart') || txt.includes('chen')) {
+                      matchedDoc = ON_CALL_DOCTORS.find((d) => d.id === 'doc-chen') || ON_CALL_DOCTORS[0];
+                    } else if (txt.includes('head') || txt.includes('stroke') || txt.includes('dizzy') || txt.includes('patel')) {
+                      matchedDoc = ON_CALL_DOCTORS.find((d) => d.id === 'doc-patel') || ON_CALL_DOCTORS[0];
+                    } else {
+                      matchedDoc = ON_CALL_DOCTORS.find((d) => d.id === 'doc-vance') || ON_CALL_DOCTORS[0];
+                    }
+
+                    return (
+                      <div className="pt-2">
+                        <PatientWaitingTimeBox
+                          doctorName={matchedDoc.name}
+                          specialty={matchedDoc.specialty}
+                          department={matchedDoc.department}
+                          location={`${matchedDoc.room}`}
+                          floorId={
+                            matchedDoc.room.includes('Level G') || matchedDoc.room.includes('Ground')
+                              ? 'G'
+                              : matchedDoc.room.includes('Level 2')
+                              ? 'L2'
+                              : matchedDoc.room.includes('Level 3')
+                              ? 'L3'
+                              : matchedDoc.room.includes('Level 4')
+                              ? 'L4'
+                              : 'L1'
+                          }
+                          currentWaitingTime={matchedDoc.currentWaitingTime || '8-12 mins'}
+                          queueLength={matchedDoc.queueCount || 1}
+                          priority={txt.includes('emergency') || txt.includes('acute') ? 'CODE_RED' : 'CODE_YELLOW'}
+                          conditionTitle={txt.includes('eye') ? 'Ocular Surface & Eye Symptoms' : txt.includes('mouth') ? 'Oral / Mucosal Symptoms' : 'Clinical Consultation & Triage'}
+                          pager={matchedDoc.pager}
+                          onViewOnMap={onViewOnMap}
+                        />
+                      </div>
+                    );
+                  }
+                  return null;
+                })()}
 
                 {/* Main Content Body with Monospace HUD syntax */}
                 <div className="whitespace-pre-wrap font-mono text-xs sm:text-[13px] leading-relaxed text-slate-200">

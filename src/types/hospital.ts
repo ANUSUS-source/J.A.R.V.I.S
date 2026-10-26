@@ -25,6 +25,8 @@ export interface DoctorProfile {
   status: 'AVAILABLE' | 'ON_CALL' | 'IN_SURGERY' | 'DISPATCHED_EN_ROUTE';
   etaMinutes?: string;
   avatarColor: string;
+  currentWaitingTime?: string;
+  queueCount?: number;
 }
 
 export interface EmergencyTriageAlert {
@@ -80,6 +82,38 @@ export interface ResearchCard {
   keyFindings: string[];
 }
 
+export interface RecommendedMedicine {
+  name: string;
+  type: string;
+  dosage: string;
+  purpose: string;
+  prescriptionRequired?: boolean;
+}
+
+export interface DoctorWaitEstimate {
+  name: string;
+  specialty: string;
+  department: string;
+  location: string;
+  pager: string;
+  currentWaitingTime: string;
+  queueLength: number;
+}
+
+export interface ClinicalScanResult {
+  id: string;
+  timestamp: string;
+  imageUrl?: string;
+  identifiedCondition: string;
+  severity: 'MILD' | 'MODERATE' | 'URGENT' | 'CRITICAL';
+  probableCauses: string[];
+  recommendedMedicines: RecommendedMedicine[];
+  immediateHomeCare: string[];
+  recommendedDoctor: DoctorWaitEstimate;
+  spokenDiagnosis: string;
+  notes?: string;
+}
+
 export interface HospitalChatMessage {
   id: string;
   role: 'user' | 'assistant';
@@ -88,6 +122,7 @@ export interface HospitalChatMessage {
   spokenBriefing?: string;
   locationResult?: HospitalLocation;
   triageAlert?: EmergencyTriageAlert;
-  modeDetected?: 'PERSONAL' | 'HOSPITAL' | 'EMERGENCY';
+  clinicalScanResult?: ClinicalScanResult;
+  modeDetected?: 'PERSONAL' | 'HOSPITAL' | 'EMERGENCY' | 'VISION_DIAGNOSTIC';
   source?: string;
 }

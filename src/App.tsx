@@ -11,7 +11,13 @@ import { DoctorRosterPanel } from './components/DoctorRosterPanel';
 import { EmergencyDoctorAlert } from './components/EmergencyDoctorAlert';
 import { JarvisExecutiveSuite } from './components/JarvisExecutiveSuite';
 import { VoiceStudioModal } from './components/VoiceStudioModal';
-import { HospitalChatMessage, EmergencyTriageAlert } from './types/hospital';
+import { CameraInjuryScanner } from './components/CameraInjuryScanner';
+import {
+  HospitalChatMessage,
+  EmergencyTriageAlert,
+  ClinicalScanResult,
+  RecommendedMedicine,
+} from './types/hospital';
 import { ON_CALL_DOCTORS } from './data/hospitalDirectory';
 import { jarvisVoice } from './utils/speechEngine';
 import { soundFx } from './utils/audioEffects';
@@ -26,6 +32,7 @@ import {
   Map,
   Shield,
   AlertTriangle,
+  Camera,
 } from 'lucide-react';
 
 const INITIAL_JARVIS_WELCOME = `[J.A.R.V.I.S. // EXECUTIVE ASSISTANT & MEDINAV CARECONNECT]
@@ -57,6 +64,7 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [activeAlert, setActiveAlert] = useState<EmergencyTriageAlert | null>(null);
   const [isVoiceStudioOpen, setIsVoiceStudioOpen] = useState(false);
+  const [isCameraScannerOpen, setIsCameraScannerOpen] = useState(false);
 
   const [messages, setMessages] = useState<HospitalChatMessage[]>([
     {
@@ -240,7 +248,16 @@ export default function App() {
     : [];
 
   return (
-    <div className="min-h-screen bg-[#070b14] text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950">
+    <div
+      className="min-h-screen text-slate-100 flex flex-col font-sans selection:bg-cyan-500 selection:text-slate-950 relative"
+      style={{
+        backgroundImage: `linear-gradient(to bottom, rgba(7, 14, 28, 0.74), rgba(5, 10, 22, 0.86)), url('/assets/aistudio/Modern_Hospital_Entrance_at_Dusk_0b80ff00.png')`,
+        backgroundSize: 'cover',
+        backgroundPosition: 'center top',
+        backgroundAttachment: 'fixed',
+        backgroundRepeat: 'no-repeat',
+      }}
+    >
       {/* Omni-Care Dual Core Header */}
       <HospitalHeader
         soundEnabled={soundEnabled}
@@ -248,6 +265,7 @@ export default function App() {
         onTriggerSos={handleTriggerSos}
         activeDispatchesCount={dispatchedIds.length}
         onOpenVoiceStudio={() => setIsVoiceStudioOpen(true)}
+        onOpenCameraScanner={() => setIsCameraScannerOpen(true)}
       />
 
       {/* Main Container */}
@@ -261,7 +279,7 @@ export default function App() {
         )}
 
         {/* View Switcher Navigation Tabs */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-slate-800 pb-2.5">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 border-b border-cyan-900/30 pb-2.5 backdrop-blur-sm">
           <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             {/* Tab 1: Omni Voice Comm-Link & Triage Command Box */}
             <button
@@ -272,7 +290,7 @@ export default function App() {
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all ${
                 activeTab === 'CHAT'
                   ? 'bg-gradient-to-r from-cyan-600 to-teal-600 text-slate-950 shadow-[0_0_18px_rgba(6,182,212,0.45)]'
-                  : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-900/80 backdrop-blur-md text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700'
               }`}
             >
               <MessageSquare className="w-4 h-4" />
@@ -288,7 +306,7 @@ export default function App() {
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all ${
                 activeTab === 'EXECUTIVE'
                   ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
-                  : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-900/80 backdrop-blur-md text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700'
               }`}
             >
               <Zap className="w-4 h-4" />
@@ -304,7 +322,7 @@ export default function App() {
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all ${
                 activeTab === 'MAP'
                   ? 'bg-cyan-600 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
-                  : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-900/80 backdrop-blur-md text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700'
               }`}
             >
               <Map className="w-4 h-4" />
@@ -320,11 +338,24 @@ export default function App() {
               className={`flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all ${
                 activeTab === 'DOCTORS'
                   ? 'bg-cyan-600 text-slate-950 shadow-[0_0_15px_rgba(6,182,212,0.4)]'
-                  : 'bg-slate-900 text-slate-300 hover:text-white border border-slate-800 hover:border-slate-700'
+                  : 'bg-slate-900/80 backdrop-blur-md text-slate-300 hover:text-white border border-slate-800/80 hover:border-slate-700'
               }`}
             >
               <Stethoscope className="w-4 h-4" />
               <span>👨‍⚕️ On-Call Doctors</span>
+            </button>
+
+            {/* Quick Action: Camera Injury & Eye Diagnostic Scanner */}
+            <button
+              onClick={() => {
+                soundFx.playClick();
+                setIsCameraScannerOpen(true);
+              }}
+              className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs sm:text-sm font-mono font-bold transition-all bg-gradient-to-r from-red-600/30 via-amber-600/20 to-cyan-600/30 hover:from-red-600/50 hover:to-cyan-600/50 text-cyan-200 border border-cyan-400/50 hover:border-cyan-300 shadow-[0_0_14px_rgba(6,182,212,0.3)] animate-pulse"
+              title="Open camera to scan red eyes, wounds, or burns and receive doctor wait times & prescriptions"
+            >
+              <Camera className="w-4 h-4 text-cyan-300" />
+              <span>📷 Camera Injury Scanner</span>
             </button>
           </div>
 
@@ -350,6 +381,7 @@ export default function App() {
               onDismissAlert={() => setActiveAlert(null)}
               onTriggerSos={handleTriggerSos}
               onOpenVoiceStudio={() => setIsVoiceStudioOpen(true)}
+              onOpenCameraScanner={() => setIsCameraScannerOpen(true)}
               dispatchedDoctorsCount={dispatchedIds.length}
               onViewOnMap={(floorId) => {
                 setActiveFloorId(floorId);
@@ -399,6 +431,38 @@ export default function App() {
         onClose={() => setIsVoiceStudioOpen(false)}
         soundEnabled={soundEnabled}
         onToggleSound={handleToggleSound}
+      />
+
+      {/* AI Camera Injury & Eye Diagnostic Scanner Modal */}
+      <CameraInjuryScanner
+        isOpen={isCameraScannerOpen}
+        onClose={() => setIsCameraScannerOpen(false)}
+        soundEnabled={soundEnabled}
+        onPageDoctor={(doc) => {
+          setIsCameraScannerOpen(false);
+          setActiveTab('CHAT');
+          handleSendMessage(
+            `URGENT CLINICAL CONSULT: Patient scanned via Camera Diagnostics. Assigned to ${doc.name} (${doc.specialty}, Room ${doc.roomNumber}). Current estimated wait time: ${doc.currentWaitingTime || '8-12 mins'}. Please page physician immediately!`
+          );
+        }}
+        onViewOnMap={(floorId) => {
+          setIsCameraScannerOpen(false);
+          setActiveFloorId(floorId);
+          setActiveTab('MAP');
+        }}
+        onPostReportToChat={(scan: ClinicalScanResult) => {
+          const scanMessage: HospitalChatMessage = {
+            id: `scan-${Date.now()}`,
+            role: 'assistant',
+            content: `[J.A.R.V.I.S. CLINICAL CAMERA SCAN // ${scan.identifiedCondition.toUpperCase()}]\nSeverity: ${scan.severity}\nProbable Causes: ${scan.probableCauses.join(', ')}\n\n◈ ASSIGNED ATTENDING PHYSICIAN:\n• ${scan.recommendedDoctor.name} (${scan.recommendedDoctor.specialty})\n• Department & Location: ${scan.recommendedDoctor.department} — ${scan.recommendedDoctor.location}\n• Estimated Waiting Time: ${scan.recommendedDoctor.currentWaitingTime} (${scan.recommendedDoctor.queueLength} patients in queue)\n\n◈ RECOMMENDED MEDICINES & PRESCRIPTIONS:\n${scan.recommendedMedicines.map((m: RecommendedMedicine) => `• ${m.name} (${m.dosage}) [${m.type}] - ${m.purpose}${m.prescriptionRequired ? ' (Prescription Required)' : ' (OTC)'}`).join('\n')}\n\n◈ IMMEDIATE HOME CARE & FIRST-AID:\n${scan.immediateHomeCare.map((a: string) => `• ${a}`).join('\n')}`,
+            spokenBriefing: scan.spokenDiagnosis,
+            clinicalScanResult: scan,
+            timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            source: 'J.A.R.V.I.S. Multi-Modal Vision & Diagnostic Engine',
+          };
+          setMessages((prev) => [...prev, scanMessage]);
+          setActiveTab('CHAT');
+        }}
       />
 
       {/* Clinical & Executive Status Footer */}
